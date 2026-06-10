@@ -22,6 +22,7 @@ RUN python -c "from sentence_transformers import CrossEncoder; CrossEncoder('cro
 # Copy application source code
 COPY app/ ./app/
 COPY data/ ./data/
+COPY web/ ./web/
 COPY .env.example ./.env
 
 # Expose application port

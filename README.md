@@ -240,15 +240,57 @@ The `./data` directory is mounted into the backend container at `/workspace/data
 
 ---
 
+## ☁️ Cloud Deployment (Render — All-in-One)
+
+Deploy the entire stack (Backend + Frontend + Redis) on **[Render](https://render.com)** from a single platform — no separate hosting needed.
+
+### How It Works
+- The FastAPI backend **also serves the frontend** static files, so only **one web service** is needed
+- Redis is provisioned as a managed service on Render
+- Auto-deploys from your GitHub repo on every push
+
+### One-Click Deploy
+1. Go to [Render Dashboard](https://dashboard.render.com) → **New** → **Blueprint**
+2. Connect your GitHub repo: `NACNAVEEN/Customer_query_RAG_BOT`
+3. Render auto-detects the `render.yaml` and creates both services
+4. Set your **API keys** in the Render dashboard:
+   - `GROQ_API_KEY` — your Groq API key
+   - `GOOGLE_API_KEY` — your Google/Gemini API key
+5. Click **Apply** — Render builds and deploys everything
+
+### What Gets Deployed
+
+| Service | Type | Plan | Description |
+|---------|------|------|-------------|
+| `instapark-ai` | Web Service (Docker) | Free | FastAPI backend + static frontend |
+| `instapark-redis` | Redis | Free | Managed Redis cache |
+
+### After Deployment
+Your app will be live at:
+```
+https://instapark-ai.onrender.com        → Frontend UI
+https://instapark-ai.onrender.com/api/   → API endpoints
+https://instapark-ai.onrender.com/docs   → Swagger documentation
+```
+
+> **Note**: Free-tier Render services spin down after 15 minutes of inactivity. The first request after idle may take ~30 seconds to cold-start.
+
+### Render Configuration (`render.yaml`)
+The `render.yaml` Blueprint defines all services. Render reads this file automatically from your repo.
+
+---
+
 ## 🏗️ Project Structure
 - `app/` - Core application codebase.
-  - `api.py` - **FastAPI REST API backend** (for React / external frontends).
+  - `api.py` - **FastAPI REST API backend** (also serves frontend in production).
   - `config/` - Configuration settings.
   - `pipeline/` - RAG Graph and orchestration.
   - `validators/` - Hallucination guards and intent validators.
 - `web/` - Static frontend (HTML/CSS/JS).
 - `data/` - Locally stored data (uploads, indexes, evaluation reports).
 - `scripts/` - Utility scripts for generating PDFs and executing evaluations.
-- `docker-compose.yml` - Multi-service Docker orchestration.
+- `docker-compose.yml` - Multi-service Docker orchestration (local development).
+- `render.yaml` - Render Blueprint for cloud deployment.
 - `Dockerfile.backend` - Backend container build configuration.
 - `Dockerfile.frontend` - Frontend container build configuration.
+

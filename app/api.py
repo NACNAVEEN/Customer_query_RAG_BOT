@@ -18,6 +18,8 @@ from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 # Ensure project root is on path
@@ -285,6 +287,27 @@ async def clear_cache():
     pipeline = get_pipeline()
     pipeline.cache.clear()
     return CacheClearResponse(message="Semantic cache cleared.")
+
+# ─── Static Frontend (Production) ────────────────────────────────────────────
+# Serve the web/ frontend from the same process so a single Render service
+# handles both API and UI.  API routes are registered first, so /api/* always
+# takes priority over static file matching.
+
+WEB_DIR = PROJECT_ROOT / "web"
+if WEB_DIR.is_dir():
+    app.mount("/assets", StaticFiles(directory=str(WEB_DIR / "assets")), name="assets")
+    app.mount("/static", StaticFiles(directory=str(WEB_DIR)), name="static-root")
+
+    @app.get("/", include_in_schema=False)
+    async def serve_index():
+        return FileResponse(str(WEB_DIR / "index.html"))
+
+    @app.get("/{path:path}", include_in_schema=False)
+    async def serve_spa(path: str):
+        file = WEB_DIR / path
+        if file.is_file():
+            return FileResponse(str(file))
+        return FileResponse(str(WEB_DIR / "index.html"))
 
 # ─── Dev Server ───────────────────────────────────────────────────────────────
 
