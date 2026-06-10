@@ -1,0 +1,35 @@
+services:
+  redis:
+    image: redis:alpine
+    container_name: instapark-redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: instapark-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - GPTCACHE_ENABLED=true
+    volumes:
+      - ./data:/workspace/data
+    depends_on:
+      - redis
+    restart: always
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: instapark-frontend
+    ports:
+      - "5500:80"
+    restart: always
