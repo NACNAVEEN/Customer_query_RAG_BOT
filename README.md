@@ -1,3 +1,15 @@
+---
+title: InstaParkAI - Smart Parking RAG Chatbot
+emoji: 🅿️
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_port: 7860
+pinned: true
+license: mit
+short_description: AI-powered Smart Parking Knowledge Assistant with RAG
+---
+
 # 🅿️ InstaParkAI - Smart Parking RAG Chatbot
 
 An industry-leading, AI-powered Smart Parking Knowledge Assistant. This application utilizes a Retrieval-Augmented Generation (RAG) pipeline to ingest parking manuals, pricing sheets, contracts, and FAQs, providing instant, context-aware answers about smart parking technologies (ANPR, RFID, IoT sensors), operations, and contracts.
