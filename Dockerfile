@@ -25,6 +25,7 @@ RUN useradd -m -u 1000 appuser
 # Copy application source code
 COPY app/ ./app/
 COPY web/ ./web/
+COPY scripts/ ./scripts/
 COPY .env.example ./.env
 
 # Create data directories with correct permissions
