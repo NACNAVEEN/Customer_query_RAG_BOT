@@ -20,6 +20,7 @@ rank-bm25>=0.2.2
 # Document processing
 pypdf>=4.0.0
 tiktoken>=0.7.0
+fpdf2>=2.7.0
 
 # Cache
 gptcache>=0.1.43

@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     bm25_top_k: int = 10
     hybrid_top_k: int = 10
     rerank_top_k: int = 3
-    similarity_threshold: float = 0.50
+    similarity_threshold: float = -9.0
     rrf_k: int = 60
 
     # Semantic cache
