@@ -57,9 +57,38 @@ async def lifespan(application: FastAPI):  # noqa: ARG001 – required by FastAP
     setup_logging()
     logger.info("Initialising RAG pipeline …")
     _pipeline = RAGPipeline()
-    logger.info(
-        "Pipeline ready – %d chunks indexed", _pipeline.retriever.document_count
-    )
+    
+    # Auto-ingest sample PDFs on startup if the index is empty
+    if _pipeline.retriever.document_count == 0:
+        logger.info("Vector index is empty. Generating and ingesting sample PDFs...")
+        try:
+            from scripts.generate_parking_pdfs import (
+                create_system_overview_pdf,
+                create_pricing_and_amc_pdf,
+                create_faq_pdf,
+            )
+            settings = get_settings()
+            uploads_dir = settings.uploads_dir
+            uploads_dir.mkdir(parents=True, exist_ok=True)
+            
+            pdf_paths = [
+                create_system_overview_pdf(uploads_dir),
+                create_pricing_and_amc_pdf(uploads_dir),
+                create_faq_pdf(uploads_dir),
+            ]
+            for path in pdf_paths:
+                _pipeline.ingest_pdf(str(path))
+            
+            logger.info(
+                "Auto-ingestion complete! Pipeline ready – %d chunks indexed",
+                _pipeline.retriever.document_count
+            )
+        except Exception as err:
+            logger.exception("Failed to auto-ingest sample PDFs on startup: %s", err)
+    else:
+        logger.info(
+            "Pipeline ready – %d chunks indexed", _pipeline.retriever.document_count
+        )
     yield
     logger.info("Shutting down …")
 
@@ -229,6 +258,10 @@ async def ingest_document(file: UploadFile = File(...)):
 
         pipeline = get_pipeline()
         result = pipeline.ingest_pdf(str(save_path))
+
+        # Invalidate semantic cache after ingestion so we don't serve stale 'not found' answers
+        pipeline.cache.clear()
+        logger.info("Cleared semantic cache after document ingestion")
 
         return IngestResponse(
             filename=file.filename,
