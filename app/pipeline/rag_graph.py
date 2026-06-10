@@ -302,8 +302,11 @@ class RAGPipeline:
             retrieved_scores=scores,
         )
 
+        final_citations = [] if validated_answer == NOT_FOUND_PHRASE else citations
+
         return {
             "answer": validated_answer,
+            "citations": final_citations,
             "metrics": {
                 **state.get("metrics", {}),
                 "validation_passed": val_res.valid,
@@ -314,6 +317,9 @@ class RAGPipeline:
     def _node_finalize(self, state: RAGState) -> RAGState:
         answer = state.get("answer", NOT_FOUND_PHRASE)
         citations = state.get("citations", [])
+
+        if answer == NOT_FOUND_PHRASE:
+            citations = []
 
 
         # Write to semantic cache
