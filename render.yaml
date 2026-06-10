@@ -19,11 +19,6 @@ services:
           name: instapark-redis
           type: redis
           property: port
-      - key: REDIS_PASSWORD
-        fromService:
-          name: instapark-redis
-          type: redis
-          property: password
       - key: GPTCACHE_ENABLED
         value: "true"
       - key: GROQ_API_KEY
