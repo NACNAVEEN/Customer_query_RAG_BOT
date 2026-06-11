@@ -28,16 +28,62 @@ class CitationBuilder:
                 continue
             seen.add(key)
 
+            # Build clean display string: 📖 Section > Heading | Page N
+            display = self._format_display(source, page, section, heading)
+
             citations.append({
                 "source": source,
                 "page": page,
                 "section": section,
                 "heading": heading,
-                "display": f"Page {page} | {section}" if page > 0 else section,
+                "display": display,
             })
 
         logger.debug("Generated %d citations from retrieved metadata", len(citations))
         return citations
+
+    def _format_display(
+        self,
+        source: str,
+        page: int,
+        section: str,
+        heading: str,
+    ) -> str:
+        """Format a clean, readable citation display string.
+
+        Examples:
+            📖 FAQ > What technologies are used? | Page 15
+            📖 Technology Stack | Page 7
+            📖 Company Overview | Page 3
+        """
+        parts: list[str] = []
+
+        # Use section as primary label
+        if section and section != "General":
+            parts.append(section)
+
+        # Add heading as sub-label if different from section
+        if heading and heading != section:
+            # Truncate very long headings
+            display_heading = heading if len(heading) <= 80 else heading[:77] + "..."
+            if parts:
+                parts.append(f" > {display_heading}")
+            else:
+                parts.append(display_heading)
+
+        # Fallback to source name if no section/heading
+        if not parts:
+            # Remove .pdf extension for cleaner display
+            clean_source = source.rsplit(".", 1)[0] if "." in source else source
+            parts.append(clean_source)
+
+        display = "".join(parts)
+
+        # Add page number
+        if page > 0:
+            display += f" | Page {page}"
+
+        return display
 
     def format_citations_text(self, citations: list[dict[str, Any]]) -> str:
         """Create a plain text representation of citations for chat history."""
