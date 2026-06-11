@@ -60,8 +60,9 @@ async def lifespan(application: FastAPI):  # noqa: ARG001 – required by FastAP
     
     # Auto-ingest sample PDFs on startup if the index is empty
     if _pipeline.retriever.document_count == 0:
-        logger.info("Vector index is empty. Generating and ingesting sample PDFs...")
+        logger.info("Vector index is empty. Running auto-ingestion of knowledge base...")
         try:
+            import shutil
             from scripts.generate_parking_pdfs import (
                 create_system_overview_pdf,
                 create_pricing_and_amc_pdf,
@@ -71,11 +72,23 @@ async def lifespan(application: FastAPI):  # noqa: ARG001 – required by FastAP
             uploads_dir = settings.uploads_dir
             uploads_dir.mkdir(parents=True, exist_ok=True)
             
-            pdf_paths = [
-                create_system_overview_pdf(uploads_dir),
-                create_pricing_and_amc_pdf(uploads_dir),
-                create_faq_pdf(uploads_dir),
-            ]
+            # 1. Generate default parking PDFs
+            create_system_overview_pdf(uploads_dir)
+            create_pricing_and_amc_pdf(uploads_dir)
+            create_faq_pdf(uploads_dir)
+
+            # 2. Copy default knowledge PDFs from scripts/default_knowledge to uploads if present
+            default_kb_dir = PROJECT_ROOT / "scripts" / "default_knowledge"
+            if default_kb_dir.is_dir():
+                for kb_file in default_kb_dir.glob("*.pdf"):
+                    dest_file = uploads_dir / kb_file.name
+                    if not dest_file.exists():
+                        shutil.copy2(kb_file, dest_file)
+                        logger.info("Copied default knowledge base file: %s", kb_file.name)
+
+            # 3. Load and ingest all PDF files found in uploads_dir
+            pdf_paths = list(uploads_dir.glob("*.pdf"))
+            logger.info("Ingesting %d PDF files: %s", len(pdf_paths), [p.name for p in pdf_paths])
             for path in pdf_paths:
                 _pipeline.ingest_pdf(str(path))
             
