@@ -110,9 +110,10 @@ class SemanticCache:
                             created_at=data.get("created_at", 0),
                         )
                     )
+            return entries
         except Exception as exc:
-            logger.warning("Failed to read cache from Redis: %s", exc)
-        return entries
+            logger.warning("Failed to read cache from Redis, falling back to in-memory: %s", exc)
+            return self._memory_store
 
     def lookup(self, query: str) -> CacheResult:
         """Search cache for semantically similar query."""
@@ -165,8 +166,10 @@ class SemanticCache:
             created_at=time.time(),
         )
 
+        # Always store in memory as a warm fallback
+        self._memory_store.append(entry)
+
         if self._redis_client is None:
-            self._memory_store.append(entry)
             return
 
         try:
@@ -182,10 +185,9 @@ class SemanticCache:
                 "created_at": entry.created_at,
             }
             self._redis_client.set(key, json.dumps(payload))
-            logger.debug("Stored response in semantic cache")
+            logger.debug("Stored response in Redis semantic cache")
         except Exception as exc:
-            logger.warning("Failed to store in Redis, using memory: %s", exc)
-            self._memory_store.append(entry)
+            logger.warning("Failed to store in Redis: %s", exc)
 
     def clear(self) -> None:
         """Clear all cached entries."""
