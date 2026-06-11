@@ -179,10 +179,28 @@ class GeminiClient:
             logger.warning("Failed to call Groq API: %s", exc)
             return ""
 
+    def _clean_context(self, context: str) -> list[str]:
+        """Strip raw metadata tags from context and return clean content paragraphs."""
+        import re
+        # Remove metadata header lines like [Document N], [Source], [Page], etc.
+        metadata_pattern = re.compile(
+            r"^\[(?:Document \d+|Source|Page|Section|Heading|Relevance Score|Content)\].*$",
+            re.MULTILINE,
+        )
+        cleaned = metadata_pattern.sub("", context)
+        # Remove chunk separators
+        cleaned = cleaned.replace("---", "")
+        # Split into paragraphs and filter empty/whitespace lines
+        paragraphs = [p.strip() for p in cleaned.split("\n") if p.strip()]
+        return paragraphs
+
     def _fallback_generate(self, query: str, context: str) -> str:
-        """Rule-based local RAG generation for offline / keyless settings."""
+        """Rule-based local RAG generation for offline / keyless settings.
+
+        Produces clean, readable output without raw metadata tags.
+        """
         query_lower = query.lower()
-        
+
         # Check for obvious out-of-scope / trap questions
         trap_keywords = ["deluxe room", "weather", "hotel", "pool", "cancellation", "sports", "dinner", "restaurant"]
         if any(tk in query_lower for tk in trap_keywords):
@@ -192,11 +210,16 @@ class GeminiClient:
         if not context or "could not find" in context.lower():
             return "I could not find this information in the provided knowledge base."
 
-        # Split context into paragraphs/blocks and match queries
-        paragraphs = [p.strip() for p in context.split("\n") if p.strip()]
-        
-        # Keyword-based extraction to find exact matching paragraph
-        keywords = ["anpr", "rfid", "iot", "sensor", "pricing", "amc", "service", "smart parking"]
+        # Clean the context to remove raw metadata tags
+        paragraphs = self._clean_context(context)
+
+        if not paragraphs:
+            return "I could not find this information in the provided knowledge base."
+
+        # Keyword-based extraction to find matching paragraphs
+        keywords = ["anpr", "rfid", "iot", "sensor", "pricing", "amc", "service",
+                     "smart parking", "revenue", "fastag", "upi", "deployment",
+                     "architecture", "ai", "analytics", "mission", "value"]
         matched_paragraphs = []
         for kw in keywords:
             if kw in query_lower:
@@ -205,14 +228,10 @@ class GeminiClient:
                         matched_paragraphs.append(p)
 
         if matched_paragraphs:
-            return "\n\n".join(matched_paragraphs)
+            return "\n\n".join(matched_paragraphs[:5])
 
-        # Fallback to returning relevant paragraphs if any exist
-        relevant_paragraphs = [p for p in paragraphs if not any(h in p for h in ["InstaParkAI - Smart", "Page "])]
-        if relevant_paragraphs:
-            return " ".join(relevant_paragraphs)
-
-        return "I could not find this information in the provided knowledge base."
+        # Return the first few clean paragraphs as a summary
+        return "\n\n".join(paragraphs[:5])
 
     def generate(
         self,
