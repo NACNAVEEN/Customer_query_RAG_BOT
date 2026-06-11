@@ -97,14 +97,9 @@ Examples:
 RESPONSE FORMAT
 ========================
 
-Answer:
-[Grounded answer organized by topic sections when applicable]
+Output ONLY the clean, grounded response directly. 
 
-Supported Sources:
-* Source/Page references used
-
-Missing Information:
-* List only the information requested by the user that is not present in the knowledge base.
+CRITICAL: Do NOT output any "Supported Sources", "Sources", or page references in the text. (The UI displays citations automatically below the message; do NOT add them to your text response.)
 
 ========================
 PRIORITY ORDER
