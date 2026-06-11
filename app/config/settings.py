@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     vector_top_k: int = 10
     bm25_top_k: int = 10
     hybrid_top_k: int = 10
-    rerank_top_k: int = 3
+    rerank_top_k: int = 8
     similarity_threshold: float = -9.0
     rrf_k: int = 60
 
